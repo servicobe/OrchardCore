@@ -1,5 +1,3 @@
-using System.Collections.Generic;
-using System.Linq;
 using Microsoft.Extensions.Localization;
 
 namespace OrchardCore.Email;
@@ -14,7 +12,7 @@ public class EmailResult
     /// </summary>
     public static readonly EmailResult SuccessResult = new()
     {
-        Succeeded = true
+        Succeeded = true,
     };
 
     /// <summary>
@@ -70,8 +68,8 @@ public class EmailResult
             Succeeded = false,
             Errors = new Dictionary<string, LocalizedString[]>()
             {
-                { propertyName ?? string.Empty, errors }
-            }
+                { propertyName ?? string.Empty, errors },
+            },
         };
 
     /// <summary>
