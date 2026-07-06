@@ -4,6 +4,7 @@ using Microsoft.Extensions.Logging;
 using OrchardCore.Environment.Shell;
 using OrchardCore.Environment.Shell.Scope;
 using OrchardCore.FileStorage;
+using OrchardCore.Media.Core.Helpers;
 using OrchardCore.Media.Events;
 using OrchardCore.Modules;
 
@@ -26,8 +27,7 @@ public class DefaultMediaFileStore : IMediaFileStore
         string cdnBaseUrl,
         IEnumerable<IMediaEventHandler> mediaEventHandlers,
         IEnumerable<IMediaCreatingEventHandler> mediaCreatingEventHandlers,
-        ILogger<DefaultMediaFileStore> logger
-        )
+        ILogger<DefaultMediaFileStore> logger)
     {
         _fileStore = fileStore;
 
@@ -36,7 +36,6 @@ public class DefaultMediaFileStore : IMediaFileStore
 
         // Media options configuration ensures any trailing slash is removed.
         _cdnBaseUrl = cdnBaseUrl;
-
         _mediaEventHandlers = mediaEventHandlers;
         _mediaCreatingEventHandlers = mediaCreatingEventHandlers;
         _logger = logger;
@@ -138,9 +137,14 @@ public class DefaultMediaFileStore : IMediaFileStore
         await _mediaEventHandlers.InvokeAsync((handler, context) => handler.MediaMovedAsync(context), context, _logger);
     }
 
-    public virtual Task CopyFileAsync(string srcPath, string dstPath)
+    public virtual async Task CopyFileAsync(string srcPath, string dstPath)
     {
-        return _fileStore.CopyFileAsync(srcPath, dstPath);
+        if (await GetFileInfoAsync(srcPath) is { Length: { } sourceSize })
+        {
+            await ValidateAvailableStorageAsync(sourceSize);
+        }
+
+        await _fileStore.CopyFileAsync(srcPath, dstPath);
     }
 
     public virtual Task<Stream> GetFileStreamAsync(string path)
@@ -155,11 +159,12 @@ public class DefaultMediaFileStore : IMediaFileStore
 
     public virtual async Task<string> CreateFileFromStreamAsync(string path, Stream inputStream, bool overwrite = false)
     {
+        var outputStream = inputStream;
+
         if (_mediaCreatingEventHandlers.Any())
         {
-            // Follows https://rules.sonarsource.com/csharp/RSPEC-3966
-            // Assumes that each stream should be disposed of only once by it's caller.
-            var outputStream = inputStream;
+            var mediaInputStream = outputStream;
+
             try
             {
                 var context = new MediaCreatingContext
@@ -180,25 +185,25 @@ public class DefaultMediaFileStore : IMediaFileStore
                     }
                     finally
                     {
-                        if (creatingStream != outputStream && creatingStream != inputStream)
+                        if (creatingStream != outputStream && creatingStream != mediaInputStream)
                         {
                             creatingStream.Dispose();
                         }
                     }
                 }
 
-                return await _fileStore.CreateFileFromStreamAsync(context.Path, outputStream, overwrite);
+                return await CreateFileAsync(path, outputStream, overwrite);
             }
             finally
             {
-                // This disposes the last outputStream.
-                outputStream?.Dispose();
+                if (outputStream != mediaInputStream)
+                {
+                    outputStream?.Dispose();
+                }
             }
         }
-        else
-        {
-            return await _fileStore.CreateFileFromStreamAsync(path, inputStream, overwrite);
-        }
+
+        return await CreateFileAsync(path, outputStream, overwrite);
     }
 
     public virtual string MapPathToPublicUrl(string path)
@@ -216,6 +221,19 @@ public class DefaultMediaFileStore : IMediaFileStore
         return _cdnBaseUrl + _requestBasePath + "/" + _fileStore.NormalizeAndEscapePath(path);
     }
 
+    public async Task<long?> GetPermittedStorageAsync()
+    {
+        var context = new MediaPermittedStorageContext
+        {
+            // Inherit the value from the underlying file store.
+            PermittedStorage = await _fileStore.GetPermittedStorageAsync(),
+        };
+
+        await _mediaEventHandlers.InvokeAsync((handler, context) => handler.MediaPermittedStorageAsync(context), context, _logger);
+
+        return context.PermittedStorage;
+    }
+
     private void ValidateRequestBasePath(HttpContext httpContext)
     {
         var originalPathBase = httpContext.Features.Get<ShellContextFeature>()?.OriginalPathBase ?? PathString.Empty;
@@ -227,5 +245,24 @@ public class DefaultMediaFileStore : IMediaFileStore
                 _requestBasePath = _fileStore.Combine(originalPathBase.Value, requestBasePath);
             }
         }
+    }
+
+    private async Task ValidateAvailableStorageAsync(long requiredStorageSpace)
+    {
+        if (await GetPermittedStorageAsync() is { } storageLimit &&
+            requiredStorageSpace > storageLimit)
+        {
+            throw new FileStoreException(
+                $"You tried to upload a file that requires {FileSizeHelpers.FormatAsBytes(requiredStorageSpace)} of " +
+                $"storage space, but only {FileSizeHelpers.FormatAsBytes(storageLimit)} is available. Try uploading " +
+                $"a file that fits the available space, or delete some unnecessary files.");
+        }
+    }
+
+    private async Task<string> CreateFileAsync(string path, Stream stream, bool overwrite)
+    {
+        await ValidateAvailableStorageAsync(stream.Length);
+
+        return await _fileStore.CreateFileFromStreamAsync(path, stream, overwrite);
     }
 }

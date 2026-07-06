@@ -1,5 +1,5 @@
 using OrchardCore.Email;
-using OrchardCore.Email.Core.Services;
+using OrchardCore.Email.Services;
 using OrchardCore.Email.Smtp.Services;
 using OrchardCore.Email.Workflows.Activities;
 using OrchardCore.Workflows.Models;
@@ -12,7 +12,7 @@ public class EmailTaskTests
     private static readonly IDictionary<string, object> _emptyDictionary = new Dictionary<string, object>();
 
     [Fact]
-    public async Task ExecuteTask_WhenToAndCcAndBccAreNotSet_ShouldFail()
+    public async Task ExecuteTask_Default_ToAndCcAndBccAreNotSetFail()
     {
         // Arrange
         var emailService = CreateSmtpService(new SmtpOptions()

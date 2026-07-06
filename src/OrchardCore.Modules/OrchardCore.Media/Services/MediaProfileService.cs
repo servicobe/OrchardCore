@@ -1,6 +1,5 @@
+using OrchardCore.Media.Core.Processing;
 using OrchardCore.Media.Models;
-using Format = OrchardCore.Media.Processing.Format;
-using ResizeMode = OrchardCore.Media.Processing.ResizeMode;
 
 namespace OrchardCore.Media.Services;
 
@@ -50,6 +49,12 @@ public class MediaProfileService : IMediaProfileService
             if (!string.IsNullOrEmpty(mediaProfile.BackgroundColor))
             {
                 commands[MediaCommands.BackgroundColorCommand] = mediaProfile.BackgroundColor;
+            }
+
+            // include only when the profile explicitly disables auto orient, otherwise it will be enabled by default. Keep urls shorter when auto orient is enabled.
+            if (!mediaProfile.AutoOrient)
+            {
+                commands[MediaCommands.AutoOrientCommand] = "false";
             }
 
             return commands;

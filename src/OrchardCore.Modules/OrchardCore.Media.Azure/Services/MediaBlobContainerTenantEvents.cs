@@ -39,18 +39,32 @@ public sealed class MediaBlobContainerTenantEvents : ModularTenantEvents
             return;
         }
 
-        _logger.LogDebug("Testing Azure Media Storage container {ContainerName} existence", _options.ContainerName);
+        if (_logger.IsEnabled(LogLevel.Debug))
+        {
+            _logger.LogDebug("Testing Azure Media Storage container {ContainerName} existence", _options.ContainerName);
+        }
 
         try
         {
             var blobContainer = new BlobContainerClient(_options.ConnectionString, _options.ContainerName);
             var response = await blobContainer.CreateIfNotExistsAsync(PublicAccessType.None);
 
-            _logger.LogDebug("Azure Media Storage container {ContainerName} created.", _options.ContainerName);
+            if (_logger.IsEnabled(LogLevel.Debug))
+            {
+                _logger.LogDebug("Azure Media Storage container {ContainerName} created.", _options.ContainerName);
+            }
+        }
+        catch (RequestFailedException ex) when (ex.ErrorCode == "InvalidResourceName" || ex.ErrorCode == "OutOfRangeInput")
+        {
+            _logger.LogError(
+                ex,
+                "Unable to create Azure Media Storage Container '{ContainerName}': the container name is invalid per Azure Blob naming rules. " +
+                "See https://learn.microsoft.com/rest/api/storageservices/naming-and-referencing-containers--blobs--and-metadata.",
+                _options.ContainerName);
         }
         catch (RequestFailedException ex)
         {
-            _logger.LogError(ex, "Unable to create Azure Media Storage Container.");
+            _logger.LogError(ex, "Unable to create Azure Media Storage Container '{ContainerName}'.", _options.ContainerName);
         }
     }
 

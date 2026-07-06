@@ -1,3 +1,4 @@
+using Fluid;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.DataProtection;
@@ -27,6 +28,7 @@ using OrchardCore.Environment.Shell.Descriptor.Models;
 using OrchardCore.Extensions;
 using OrchardCore.Json;
 using OrchardCore.Localization;
+using OrchardCore.Localization.Data;
 using OrchardCore.Locking;
 using OrchardCore.Locking.Distributed;
 using OrchardCore.Modules;
@@ -138,10 +140,20 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<IStringLocalizerFactory, NullStringLocalizerFactory>();
         services.AddSingleton<IHtmlLocalizerFactory, NullHtmlLocalizerFactory>();
 
+        // Register no-op data localization services as defaults.
+        // These can be replaced when the OrchardCore.DataLocalization module is enabled.
+        services.TryAddSingleton<IDataLocalizerFactory, NullDataLocalizerFactory>();
+        services.TryAddTransient<IDataLocalizer>(sp =>
+        {
+            var dataLocalizerFactory = sp.GetService<IDataLocalizerFactory>();
+            return dataLocalizerFactory.Create();
+        });
+
         services.AddWebEncoders();
 
         services.AddHttpContextAccessor();
         services.AddSingleton<IClock, Clock>();
+        services.TryAddSingleton<ITimeZoneSelectListProvider, DefaultTimeZoneSelectListProvider>();
         services.AddScoped<ILocalClock, LocalClock>();
 
         services.AddScoped<ILocalizationService, DefaultLocalizationService>();
@@ -166,6 +178,8 @@ public static class ServiceCollectionExtensions
 
             services.Configure<CultureOptions>(configuration.GetSection("OrchardCore_Localization_CultureOptions"));
         });
+
+        services.AddSingleton(new FluidParser());
     }
 
     private static void AddShellServices(OrchardCoreBuilder builder)
@@ -275,7 +289,7 @@ public static class ServiceCollectionExtensions
             };
 
             app.UseStaticFiles(options);
-        });
+        }, order: OrchardCoreConstants.ConfigureOrder.StaticFiles);
     }
 
     /// <summary>

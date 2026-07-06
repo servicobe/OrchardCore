@@ -1,5 +1,6 @@
 using Microsoft.Extensions.Localization;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using OrchardCore.ContentManagement;
 using OrchardCore.ContentManagement.Metadata;
 using OrchardCore.ContentManagement.Metadata.Models;
@@ -14,8 +15,8 @@ public class ContentDefinitionService : IContentDefinitionService
 {
     private readonly IContentDefinitionManager _contentDefinitionManager;
     private readonly IEnumerable<IContentDefinitionEventHandler> _contentDefinitionEventHandlers;
+    private readonly ContentTypesOptions _contentTypesOptions;
     private readonly ILogger _logger;
-
     protected readonly IStringLocalizer S;
 
     public ContentDefinitionService(
@@ -23,11 +24,13 @@ public class ContentDefinitionService : IContentDefinitionService
             IEnumerable<IContentDefinitionEventHandler> contentDefinitionEventHandlers,
             IEnumerable<ContentPart> contentParts,
             IEnumerable<ContentField> contentFields,
+            IOptions<ContentTypesOptions> contentTypesOptions,
             ILogger<ContentDefinitionService> logger,
             IStringLocalizer<ContentDefinitionService> stringLocalizer)
     {
         _contentDefinitionManager = contentDefinitionManager;
         _contentDefinitionEventHandlers = contentDefinitionEventHandlers;
+        _contentTypesOptions = contentTypesOptions.Value;
 
         foreach (var element in contentParts.Select(x => x.GetType()))
         {
@@ -56,7 +59,7 @@ public class ContentDefinitionService : IContentDefinitionService
         }
         else
         {
-            if (!name[0].IsLetter())
+            if (!char.IsAsciiLetter(name[0]))
             {
                 throw new ArgumentException("Content type name must start with a letter", nameof(name));
             }
@@ -77,7 +80,16 @@ public class ContentDefinitionService : IContentDefinitionService
 
         // Ensure it has its own part.
         await _contentDefinitionManager.AlterTypeDefinitionAsync(name, builder => builder.WithPart(name));
-        await _contentDefinitionManager.AlterTypeDefinitionAsync(name, cfg => cfg.Creatable().Draftable().Versionable().Listable().Securable());
+        await _contentDefinitionManager.AlterTypeDefinitionAsync(name, cfg =>
+        {
+            cfg.Creatable()
+                .Draftable()
+                .Versionable()
+                .Listable()
+                .Securable()
+                .WithThumbnailPath(_contentTypesOptions.DefaultThumbnailPath)
+                .WithCategory(_contentTypesOptions.DefaultCategory);
+        });
 
         var context = new ContentTypeCreatedContext
         {
@@ -130,7 +142,10 @@ public class ContentDefinitionService : IContentDefinitionService
 
     public async Task AddPartToTypeAsync(string partName, string typeName)
     {
-        await _contentDefinitionManager.AlterTypeDefinitionAsync(typeName, typeBuilder => typeBuilder.WithPart(partName));
+        var typeDefinition = await _contentDefinitionManager.LoadTypeDefinitionAsync(typeName);
+        var position = GetPartPosition(typeDefinition, partName);
+
+        await _contentDefinitionManager.AlterTypeDefinitionAsync(typeName, typeBuilder => typeBuilder.WithPart(partName, partBuilder => partBuilder.WithPosition(position)));
         var context = new ContentPartAttachedContext
         {
             ContentTypeName = typeName,
@@ -142,11 +157,15 @@ public class ContentDefinitionService : IContentDefinitionService
 
     public async Task AddReusablePartToTypeAsync(string name, string displayName, string description, string partName, string typeName)
     {
+        var typeDefinition = await _contentDefinitionManager.LoadTypeDefinitionAsync(typeName);
+        var position = GetPartPosition(typeDefinition, name);
+
         await _contentDefinitionManager.AlterTypeDefinitionAsync(typeName, typeBuilder => typeBuilder
             .WithPart(name, partName, partBuilder =>
             {
                 partBuilder.WithDisplayName(displayName);
                 partBuilder.WithDescription(description);
+                partBuilder.WithPosition(position);
             })
         );
 
@@ -270,9 +289,10 @@ public class ContentDefinitionService : IContentDefinitionService
         }
 
         fieldName = fieldName.ToSafeName();
+        var position = GetFieldPosition(partDefinition, fieldName);
 
         await _contentDefinitionManager.AlterPartDefinitionAsync(partName,
-            partBuilder => partBuilder.WithField(fieldName, fieldBuilder => fieldBuilder.OfType(fieldTypeName).WithDisplayName(displayName)));
+            partBuilder => partBuilder.WithField(fieldName, fieldBuilder => fieldBuilder.OfType(fieldTypeName).WithDisplayName(displayName).MergeSettings<ContentPartFieldSettings>(x => x.Position = position)));
 
         _contentDefinitionEventHandlers.Invoke((handler, context) => handler.ContentFieldAttached(context), new ContentFieldAttachedContext
         {
@@ -456,6 +476,49 @@ public class ContentDefinitionService : IContentDefinitionService
         }
 
         return displayName;
+    }
+
+    private static string GetPartPosition(ContentTypeDefinition typeDefinition, string partName)
+    {
+        var existingPartDefinition = typeDefinition?.Parts.FirstOrDefault(part => string.Equals(part.Name, partName, StringComparison.OrdinalIgnoreCase));
+        var existingPosition = existingPartDefinition?.GetSettings<ContentTypePartSettings>().Position;
+
+        if (!string.IsNullOrWhiteSpace(existingPosition))
+        {
+            return existingPosition;
+        }
+
+        return GetNextPosition(typeDefinition?.Parts.Select(part => part.GetSettings<ContentTypePartSettings>().Position));
+    }
+
+    private static string GetFieldPosition(ContentPartDefinition partDefinition, string fieldName)
+    {
+        var existingFieldDefinition = partDefinition?.Fields.FirstOrDefault(field => string.Equals(field.Name, fieldName, StringComparison.OrdinalIgnoreCase));
+        var existingPosition = existingFieldDefinition?.GetSettings<ContentPartFieldSettings>().Position;
+
+        if (!string.IsNullOrWhiteSpace(existingPosition))
+        {
+            return existingPosition;
+        }
+
+        return GetNextPosition(partDefinition?.Fields.Select(field => field.GetSettings<ContentPartFieldSettings>().Position));
+    }
+
+    private static string GetNextPosition(IEnumerable<string> positions)
+    {
+        var nextPosition = 0;
+        var currentIndex = 0;
+
+        if (positions != null)
+        {
+            foreach (var position in positions)
+            {
+                nextPosition = Math.Max(nextPosition, int.TryParse(position, out var parsedPosition) ? parsedPosition + 1 : currentIndex + 1);
+                currentIndex++;
+            }
+        }
+
+        return nextPosition.ToString();
     }
 
     private static string VersionName(string name)

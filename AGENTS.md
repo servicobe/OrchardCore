@@ -96,14 +96,16 @@ of each filter.
         This is categorized as a simple filter. You cannot use both simple filters and query filters.
 
 
-### Functional Tests (Cypress)
+### Functional Tests (Playwright)
 
 End-to-end tests are located in `test/OrchardCore.Tests.Functional/`.
 
 ```bash
-cd test/OrchardCore.Tests.Functional
-npm install
-npm run cms:test
+# Run CMS functional tests
+dotnet test test/OrchardCore.Tests.Functional/OrchardCore.Tests.Functional.csproj --filter-class "*Cms*"
+
+# Run MVC functional tests
+dotnet test test/OrchardCore.Tests.Functional/OrchardCore.Tests.Functional.csproj --filter-class "*Mvc*"
 ```
 
 ### Automated Browser Testing (Playwright MCP)
@@ -128,7 +130,7 @@ For AI agents, the Playwright MCP (Model Context Protocol) provides automated br
 
 - `test/OrchardCore.Tests/` - Main unit test project
 - `test/OrchardCore.Abstractions.Tests/` - Tests for abstractions
-- `test/OrchardCore.Tests.Functional/` - Cypress E2E tests
+- `test/OrchardCore.Tests.Functional/` - Playwright E2E functional tests
 - `test/OrchardCore.Tests.Modules/` - Test modules used by tests
 
 ## Project Structure
@@ -148,185 +150,28 @@ OrchardCore/
 └── .scripts/                           # Build and asset scripts
 ```
 
-## Creating a New Module
+## Available Skills
 
-### Module Structure
+The following skills are available in `.agents/skills/` for guided workflows:
 
-A module typically contains:
+| Skill | Description | Use When |
+|-------|-------------|----------|
+| `orchardcore-module-creator` | Create new modules | Adding modules, content parts, fields, handlers |
+| `orchardcore-theme-creator` | Create new themes | Adding themes, layouts, frontend assets |
+| `orchardcore-recipe-creator` | Create setup recipes | Provisioning a tenant: features, themes, content, roles, settings |
+| `orchardcore-asset-manager` | Build/manage frontend assets | Modifying SCSS, JS, TS, Vue or troubleshooting the asset pipeline |
+| `orchardcore-admin-edit-views` | Build admin edit views | Creating/updating `*.Edit.cshtml` with `ocat-*` classes |
+| `orchardcore-data-migration` | Write data migrations | Altering content definitions, index tables, patching content items |
+| `orchardcore-display-management` | Control rendering | placement.json, drivers, shapes, zones, alternates, editor layouts |
+| `orchardcore-workflow-activity` | Custom workflow activities | New workflow task/event, outcomes, activity editor, input/output |
+| `orchardcore-query-indexing` | Queries & search indexing | SQL/Lucene queries, index profiles, index handlers, search |
+| `orchardcore-localization` | Localize apps & content | IStringLocalizer S/T/H, PO files, content translation, cultures |
+| `orchardcore-tenants` | Multi-tenancy | Shells, creating tenants, tenant scopes, feature profiles, isolation |
+| `orchardcore-unit-test` | Write & run tests | xUnit, SiteContext integration, Moq, Playwright functional |
+| `orchardcore-docs-writer` | Author docs | MkDocs pages, module README, nav, admonitions, redirects |
+| `orchardcore-tester` | Browser-based testing | Testing features via Playwright automation |
 
-```
-OrchardCore.Modules/OrchardCore.YourModule/
-├── Manifest.cs                 # Module metadata and features
-├── Startup.cs                  # Service registration
-├── Migrations.cs               # Database migrations
-├── PermissionProvider.cs       # Permission definitions
-├── AdminMenu.cs                # Admin navigation
-├── Controllers/                # MVC controllers
-├── Drivers/                    # Content part/field drivers
-├── Fields/                     # Custom content fields
-├── Handlers/                   # Event handlers
-├── Models/                     # Data models
-├── Services/                   # Business logic services
-├── Settings/                   # Part/field settings
-├── ViewModels/                 # View models
-├── Views/                      # Razor views
-├── Assets/                     # Frontend assets (JS, CSS, SCSS)
-│   ├── js/
-│   ├── scss/
-│   └── package.json
-├── wwwroot/                    # Static files output
-└── OrchardCore.YourModule.csproj
-```
-
-### Manifest.cs
-
-Define module metadata and features:
-
-```csharp
-using OrchardCore.Modules.Manifest;
-
-[assembly: Module(
-    Name = "Your Module",
-    Author = ManifestConstants.OrchardCoreTeam,
-    Website = ManifestConstants.OrchardCoreWebsite,
-    Version = ManifestConstants.OrchardCoreVersion
-)]
-
-[assembly: Feature(
-    Id = "OrchardCore.YourModule",
-    Name = "Your Module",
-    Description = "Description of your module.",
-    Dependencies = ["OrchardCore.ContentTypes"],
-    Category = "Content Management"
-)]
-```
-
-### Startup.cs
-
-Register services using dependency injection:
-
-```csharp
-using Microsoft.Extensions.DependencyInjection;
-using OrchardCore.Modules;
-
-namespace OrchardCore.YourModule;
-
-public sealed class Startup : StartupBase
-{
-    public override void ConfigureServices(IServiceCollection services)
-    {
-        services.AddScoped<IYourService, YourService>();
-        services.AddDataMigration<Migrations>();
-        // Register navigation, permissions, etc.
-    }
-}
-```
-
-### Migrations.cs
-
-Database migrations using YesSql:
-
-```csharp
-using OrchardCore.Data.Migration;
-
-namespace OrchardCore.YourModule;
-
-public sealed class Migrations : DataMigration
-{
-    public async Task<int> CreateAsync()
-    {
-        // Initial migration logic
-        return 1;
-    }
-
-    public async Task<int> UpdateFrom1Async()
-    {
-        // Migration from version 1 to 2
-        return 2;
-    }
-}
-```
-
-### PermissionProvider.cs
-
-Define and register permissions:
-
-```csharp
-using OrchardCore.Security.Permissions;
-
-namespace OrchardCore.YourModule;
-
-public sealed class PermissionProvider : IPermissionProvider
-{
-    public static readonly Permission ManageYourFeature = 
-        new("ManageYourFeature", "Manage your feature");
-
-    public Task<IEnumerable<Permission>> GetPermissionsAsync()
-        => Task.FromResult<IEnumerable<Permission>>([ManageYourFeature]);
-
-    public IEnumerable<PermissionStereotype> GetDefaultStereotypes() =>
-    [
-        new PermissionStereotype
-        {
-            Name = OrchardCoreConstants.Roles.Administrator,
-            Permissions = [ManageYourFeature],
-        },
-    ];
-}
-```
-
-### Project File (.csproj)
-
-```xml
-<Project Sdk="Microsoft.NET.Sdk.Razor">
-  <PropertyGroup>
-    <AddRazorSupportForMvc>true</AddRazorSupportForMvc>
-    <Title>OrchardCore Your Module</Title>
-    <Description>Your module description.</Description>
-    <PackageTags>$(PackageTags) OrchardCoreCMS</PackageTags>
-  </PropertyGroup>
-
-  <ItemGroup>
-    <FrameworkReference Include="Microsoft.AspNetCore.App" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <ProjectReference Include="..\..\OrchardCore\OrchardCore.Module.Targets\OrchardCore.Module.Targets.csproj" />
-    <!-- Add other dependencies -->
-  </ItemGroup>
-</Project>
-```
-
-## Creating a New Theme
-
-### Theme Structure
-
-```
-OrchardCore.Themes/YourTheme/
-├── Manifest.cs
-├── Views/
-│   └── Layout.cshtml
-├── Assets/
-│   └── scss/
-├── wwwroot/
-│   ├── css/
-│   └── js/
-└── YourTheme.csproj
-```
-
-### Theme Manifest
-
-```csharp
-using OrchardCore.DisplayManagement.Manifest;
-
-[assembly: Theme(
-    Name = "Your Theme",
-    Author = ManifestConstants.OrchardCoreTeam,
-    Website = ManifestConstants.OrchardCoreWebsite,
-    Version = ManifestConstants.OrchardCoreVersion,
-    Description = "Your theme description."
-)]
-```
+These skills provide step-by-step guidance, code templates, and references for common tasks.
 
 ## Frontend Assets
 
@@ -375,56 +220,7 @@ Each module with frontend assets needs an `Assets.json` file:
 
 ## Content Management Patterns
 
-### Content Part
-
-```csharp
-public class YourPart : ContentPart
-{
-    public string YourField { get; set; }
-}
-```
-
-### Content Part Driver
-
-```csharp
-public sealed class YourPartDisplayDriver : ContentPartDisplayDriver<YourPart>
-{
-    public override IDisplayResult Display(YourPart part, BuildPartDisplayContext context)
-    {
-        return Initialize<YourPartViewModel>("YourPart", model =>
-        {
-            model.YourField = part.YourField;
-        }).Location("Detail", "Content:5");
-    }
-
-    public override IDisplayResult Edit(YourPart part, BuildPartEditorContext context)
-    {
-        return Initialize<YourPartViewModel>("YourPart_Edit", model =>
-        {
-            model.YourField = part.YourField;
-        });
-    }
-
-    public override async Task<IDisplayResult> UpdateAsync(
-        YourPart part, 
-        UpdatePartEditorContext context)
-    {
-        var viewModel = new YourPartViewModel();
-        await context.Updater.TryUpdateModelAsync(viewModel, Prefix);
-        part.YourField = viewModel.YourField;
-        return Edit(part, context);
-    }
-}
-```
-
-### Content Field
-
-```csharp
-public class YourField : ContentField
-{
-    public string Value { get; set; }
-}
-```
+For detailed patterns including Content Parts, Content Part Drivers, Content Fields, and more, see the `orchardcore-module-creator` skill in `.agents/skills/`.
 
 ## Coding Conventions
 
@@ -457,6 +253,13 @@ The project uses:
 - StyleCop.Analyzers for style enforcement
 - `AnalysisLevel` set to `latest-Recommended`
 - Specific CA rules are suppressed (see `Directory.Build.props`)
+
+### Documentation
+
+- Update the canonical page under `src\docs` whenever a change affects user-facing behavior, configuration, setup, public APIs, stereotypes, or extension points.
+- Add or update XML `<summary>` documentation for new or modified public interfaces, domain models, enums, and other public members that are part of the change.
+- Document each enum member individually when its behavior is relevant to users or downstream developers.
+- When XML documentation already exists, revise the existing block in place and keep `<param>` tags accurate and in signature order.
 
 ## Database Patterns
 
@@ -515,6 +318,8 @@ public class YourIndexProvider : IndexProvider<YourDocument>
 
 ### Unit Test Structure
 
+Name test methods with the `{Action}_{Condition}_{ExpectedResult}` format, for example `Write_WithinLimit_Succeeds`.
+
 ```csharp
 using Xunit;
 
@@ -523,7 +328,7 @@ namespace OrchardCore.Tests.Modules.OrchardCore.YourModule;
 public class YourServiceTests
 {
     [Fact]
-    public async Task YourMethod_ShouldDoSomething_WhenCondition()
+    public async Task YourMethod_Condition_DoesSomething()
     {
         // Arrange
         var service = new YourService();
@@ -538,7 +343,7 @@ public class YourServiceTests
     [Theory]
     [InlineData("input1", "expected1")]
     [InlineData("input2", "expected2")]
-    public void YourMethod_ShouldReturnExpected(string input, string expected)
+    public void YourMethod_Input_ReturnsExpected(string input, string expected)
     {
         // Test implementation
     }
@@ -558,7 +363,7 @@ public class YourIntegrationTests : IClassFixture<OrchardTestFixture>
     }
 
     [Fact]
-    public async Task Feature_ShouldWork()
+    public async Task Feature_DefaultRecipe_Works()
     {
         // Use _fixture to create test scenarios
     }
@@ -567,84 +372,41 @@ public class YourIntegrationTests : IClassFixture<OrchardTestFixture>
 
 ### Manual Testing
 
-Use the Playwright MCP to do manual testing that involve browsing the web application.
+For browser-based manual testing using Playwright, see the `orchardcore-tester` skill in `.agents/skills/`.
 
-#### Clearing Application State
+**Quick start:**
+```powershell
+# Build
+dotnet build src/OrchardCore.Cms.Web -c Debug -f net10.0
 
-To start with a fresh installation:
+# Generate/get port and start in background
+$port = if (Test-Path .orchardcore-port) { Get-Content .orchardcore-port } else { $p = Get-Random -Min 5000 -Max 6000; $p | Out-File .orchardcore-port -NoNewline; $p }
+$proc = Start-Process dotnet -ArgumentList "run","-f","net10.0","--no-build","--urls","http://localhost:$port" -WorkingDirectory "src/OrchardCore.Cms.Web" -PassThru -NoNewWindow
+$proc.Id | Out-File .orchardcore-pid -NoNewline
 
-```bash
-# Stop the application if running (Ctrl+C)
+# URL: http://localhost:$port
+# Test credentials: admin / admin@test.com / Password1!
 
-# Delete the App_Data folder (contains database and tenant data)
-rm -rf src/OrchardCore.Cms.Web/App_Data
+# Stop when done
+Stop-Process -Id (Get-Content .orchardcore-pid) -Force; Remove-Item .orchardcore-pid
 
-# The application will prompt for setup on next run
+# Reset state: Remove-Item -Recurse -Force src/OrchardCore.Cms.Web/App_Data
 ```
 
-The application is ready when the message `Application started.` is writing on the console.
+**Debugging**: Check `src/OrchardCore.Cms.Web/App_Data/logs/orchard-log-{date}.log`
 
-#### Starting the Application
+### Functional Testing with Playwright
 
-```bash
-# Navigate to the web project
-cd src/OrchardCore.Cms.Web
+Create new functional tests under `test/OrchardCore.Tests.Functional/Tests/` following the existing C# test class patterns.
 
-# Run
-dotnet run -f net10.0
-
-# Or Run without building if there were no binary code changes
-dotnet run -f net10.0 --no-build
-
-# Application will be available at http://localhost:5000
-```
-
-#### Setting Up a Test Site
-
-1. Navigate to `http://localhost:5000` in your browser
-2. Complete the setup wizard:
-   - **Site Name**: Enter any name (e.g., "Test Site")
-   - **Recipe**: Select **"Blog"** instead of the default "Software as a Service"
-     - Blog recipe includes common features like Media, Content Management, and Admin enabled
-     - Provides a better starting point for testing various modules
-   - **Database**: Keep default "Sqlite" for local testing
-   - **Super User**: Create admin credentials
-     - Username: `admin`
-     - Email: `admin@test.com`
-     - Password: `Password1!`
-3. Click **"Finish Setup"**
-4. Log in with your admin credentials
-
-#### Enabling Specific Features
-
-After setup, you can enable additional features:
-
-1. Navigate to **Admin** → **Configuration** → **Features** (`/Admin/Features`)
-2. Find the feature you want to enable (e.g., "Media", "Media Library", "Deployment")
-3. Click the **"Enable"** button next to the feature
-4. Wait for the feature to be enabled (page will refresh)
-
-**Common Features for Testing:**
-- **OrchardCore.Media**: Core media management
-- **OrchardCore.Contents**: Content item management
-- **OrchardCore.ContentTypes**: Content type editor
-
-**Pro Tip**: You can enable multiple features at once by checking their boxes and clicking "Enable" at the bottom.
-
-### Functional Testing with Cypress
-
-Create new functional tests under `test/OrchardCore.Tests.Functional/cypress/` following the existing spec patterns.
-
-Run the Cypress functional tests:
+Run the Playwright functional tests:
 
 ```bash
-cd test/OrchardCore.Tests.Functional
+# Run CMS functional tests
+dotnet test test/OrchardCore.Tests.Functional/OrchardCore.Tests.Functional.csproj --filter-class "*Cms*"
 
-# Required before first usage
-npm install
-
-# Run all functional tests
-npm run cms:test
+# Run MVC functional tests
+dotnet test test/OrchardCore.Tests.Functional/OrchardCore.Tests.Functional.csproj --filter-class "*Mvc*"
 ```
 
 ## Common Extension Points
@@ -723,11 +485,11 @@ public sealed class AdminMenu : AdminNavigationProvider
 
 1. Follow existing code style and conventions
 2. Include unit tests for new functionality
-3. Update documentation if adding new features
+3. Update the canonical documentation page when adding or changing user-facing features, public APIs, configuration, stereotypes, or extension points, and keep the docs aligned with the shipped code and behavior
 4. Run asset build if modifying CSS/JS: `yarn build`
 5. Ensure all tests pass: `dotnet test`
 6. Link related GitHub issues using `Fixes #IssueId`
-7. Add release notes for significant changes in `src/docs/releases/`
+7. Add release notes for significant changes in `src/docs/releases/`, but do not rely on release notes as the only documentation for a feature; release notes describe what changed, while the canonical docs describe the current behavior without transitional or versioned wording
 
 ## Useful Commands
 
@@ -758,3 +520,92 @@ yarn check
 - [Discord Community](https://orchardcore.net/discord)
 - [Issue Tracker](https://github.com/OrchardCMS/OrchardCore/issues)
 - [API Reference](https://docs.orchardcore.net/en/latest/reference/)
+
+## Admin Edit View Conventions
+
+When creating or updating Orchard Core admin edit views, always use the `ocat-*` admin theme classes so the UI stays consistent across the site and works with custom admin theme overrides.
+
+This applies to admin-facing Razor edit views such as:
+
+- `*.Edit.cshtml`
+- `*.Fields.Edit.cshtml`
+- Admin editor templates rendered in the admin theme
+
+### Required patterns
+
+| Scenario | Required structure |
+|---|---|
+| Standard admin field row (default for all inputs) | `ocat-wrapper` + `ocat-label` + `ocat-end` |
+| Required field label | `ocat-label ocat-label-required` |
+| Checkbox or toggle with no left-column label | `ocat-wrapper` + `ocat-end-offset` |
+| Standalone alert, notice, or section headline inside an edit form | `ocat-wrapper` + `ocat-end-offset` |
+| Limited-width row **only** for `type="number"` inputs or when the user explicitly requests compact width | `ocat-limited-wrapper` + `ocat-label` + `ocat-limited` |
+
+> **Default rule:** Always use the standard `ocat-wrapper` + `ocat-label` + `ocat-end` pattern unless the input is a `type="number"` field or the user explicitly asks for limited/compact width.
+
+### Standard field example
+
+```cshtml
+<div class="ocat-wrapper" asp-validation-class-for="DisplayText">
+    <label asp-for="DisplayText" class="ocat-label">@T["Display text"]</label>
+    <div class="ocat-end">
+        <input asp-for="DisplayText" class="form-control" />
+        <span asp-validation-for="DisplayText"></span>
+        <span class="hint">@T["Shown to editors in the admin UI."]</span>
+    </div>
+</div>
+```
+
+### Limited-width field example (number inputs)
+
+```cshtml
+<div class="ocat-limited-wrapper" asp-validation-class-for="PageSize">
+    <label asp-for="PageSize" class="ocat-label">@T["Page size"]</label>
+    <div class="ocat-limited">
+        <input asp-for="PageSize" type="number" class="form-control" />
+        <span asp-validation-for="PageSize"></span>
+        <span class="hint">@T["The default page size."]</span>
+    </div>
+</div>
+```
+
+### Limited-width field inside a content field or content part wrapper
+
+If the row also needs Orchard-specific wrapper classes such as `field-wrapper-*` or `content-part-wrapper-*`, keep the outer `ocat-wrapper` and place the compact control inside `ocat-end`:
+
+```cshtml
+<div class="ocat-wrapper field-wrapper @($"field-wrapper-{Model.PartFieldDefinition.PartDefinition.Name.HtmlClassify()}-{Model.PartFieldDefinition.Name.HtmlClassify()}")">
+    <label asp-for="Value" class="ocat-label">@T["Value"]</label>
+    <div class="ocat-end">
+        <div class="ocat-limited-wrapper">
+            <div class="ocat-limited">
+                <input asp-for="Value" class="form-control" />
+                <span asp-validation-for="Value"></span>
+            </div>
+        </div>
+        <span class="hint">@T["Keeps a compact editor width without losing the field wrapper row."]</span>
+    </div>
+</div>
+```
+
+### Standalone alert or headline row
+
+Use `ocat-end-offset` for alerts, notices, legends, and headings that belong to the form but do not have a left-column label:
+
+```cshtml
+<div class="ocat-wrapper">
+    <div class="ocat-end-offset">
+        <h5>@T["Section heading"]</h5>
+        <div class="alert alert-warning" role="alert">
+            @T["Important guidance for this form section."]
+        </div>
+    </div>
+</div>
+```
+
+### Avoid
+
+- `mb-3`, `form-group`, or `form-label` as the row layout pattern
+- Legacy helper methods such as `@Orchard.GetWrapperClasses()` or `@Orchard.GetLimitedWidthWrapperClasses()`
+- Using `ocat-limited-wrapper` for text inputs, selects, paths, IDs, or other non-number fields unless the user explicitly requests compact width
+- Mixing `ocat-end` and `ocat-end-offset` in the same row; choose exactly one based on whether the row has a left-column label

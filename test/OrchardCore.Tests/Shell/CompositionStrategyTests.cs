@@ -10,7 +10,7 @@ namespace OrchardCore.Tests.Shell;
 public class CompositionStrategyTests
 {
     [Fact]
-    public async Task ComposeAsync_ReturnsBlueprintWithDependencies_WhenFeaturesPresent()
+    public async Task ComposeAsync_FeaturesPresent_ReturnsBlueprintWithDependencies()
     {
         // Arrange
         var featureId = "FeatureA";
@@ -49,7 +49,7 @@ public class CompositionStrategyTests
     }
 
     [Fact]
-    public async Task ComposeAsync_SkipsType_WhenRequiredFeatureMissing()
+    public async Task ComposeAsync_RequiredFeatureMissing_SkipsType()
     {
         // Arrange
         var featureId = "FeatureA";
@@ -84,7 +84,7 @@ public class CompositionStrategyTests
     }
 
     [Fact]
-    public async Task ComposeAsync_SkipsType_WhenNotAllRequiredFeaturesAreEnabled()
+    public async Task ComposeAsync_NotAllRequiredFeaturesAreEnabled_SkipsType()
     {
         // Arrange
         var featureId = "FeatureA";
@@ -120,7 +120,7 @@ public class CompositionStrategyTests
     }
 
     [Fact]
-    public async Task ComposeAsync_IncludedType_WhenAllRequiredFeaturesAreEnabled()
+    public async Task ComposeAsyncIncludedType_AllRequiredFeaturesAreEnabled_Succeeds()
     {
         // Arrange
         var featureAId = "FeatureA";
@@ -164,7 +164,7 @@ public class CompositionStrategyTests
     }
 
     [Fact]
-    public async Task ComposeAsync_LogsDebug_WhenLoggerEnabled()
+    public async Task ComposeAsyncLogsDebug_LoggerEnabled_Succeeds()
     {
         // Arrange
         var featureId = "FeatureA";
@@ -195,22 +195,17 @@ public class CompositionStrategyTests
         await strategy.ComposeAsync(settings, descriptor);
 
         // Assert
-        logger.Verify(l => l.Log(
-            LogLevel.Debug,
-            It.IsAny<EventId>(),
-            It.Is<It.IsAnyType>((v, t) => v.ToString().Contains("Composing blueprint")),
-            null,
-            It.IsAny<Func<It.IsAnyType, Exception, string>>()), Times.Once);
-        logger.Verify(l => l.Log(
-            LogLevel.Debug,
-            It.IsAny<EventId>(),
-            It.Is<It.IsAnyType>((v, t) => v.ToString().Contains("Done composing blueprint")),
-            null,
-            It.IsAny<Func<It.IsAnyType, Exception, string>>()), Times.Once);
+        var logMessages = logger.Invocations
+            .Where(i => i.Method.Name == nameof(ILogger.Log))
+            .Select(i => new { Level = (LogLevel)i.Arguments[0], Message = i.Arguments[2]?.ToString() })
+            .ToList();
+
+        Assert.Single(logMessages, m => m.Level == LogLevel.Debug && m.Message.Contains("Composing blueprint"));
+        Assert.Single(logMessages, m => m.Level == LogLevel.Debug && m.Message.Contains("Done composing blueprint"));
     }
 
     [Fact]
-    public async Task ComposeAsync_SkipsType_WhenFeatureIsDefaultTenantOnly_AndTenantIsNotDefault()
+    public async Task ComposeAsync_FeatureIsDefaultTenantOnlyAndTenantIsNotDefault_SkipsType()
     {
         // Arrange - Bug #18244: DefaultTenantOnly feature types should be skipped on non-default tenants
         var featureId = "FeatureA";
@@ -246,7 +241,7 @@ public class CompositionStrategyTests
     }
 
     [Fact]
-    public async Task ComposeAsync_IncludesType_WhenFeatureIsDefaultTenantOnly_AndTenantIsDefault()
+    public async Task ComposeAsyncIncludesType_FeatureIsDefaultTenantOnlyAndTenantIsDefault_Succeeds()
     {
         // Arrange
         var featureId = "FeatureA";
@@ -283,7 +278,7 @@ public class CompositionStrategyTests
     }
 
     [Fact]
-    public async Task ComposeAsync_IncludesType_WhenFeatureIsNotDefaultTenantOnly_AndTenantIsNotDefault()
+    public async Task ComposeAsyncIncludesType_FeatureIsNotDefaultTenantOnlyAndTenantIsNotDefault_Succeeds()
     {
         // Arrange
         var featureId = "FeatureA";

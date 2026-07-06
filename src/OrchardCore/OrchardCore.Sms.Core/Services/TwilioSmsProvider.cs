@@ -5,6 +5,7 @@ using System.Text.Json;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.Extensions.Localization;
 using Microsoft.Extensions.Logging;
+using OrchardCore.Infrastructure;
 using OrchardCore.Settings;
 using OrchardCore.Sms.Models;
 
@@ -44,7 +45,13 @@ public class TwilioSmsProvider : ISmsProvider
         S = stringLocalizer;
     }
 
-    public async Task<SmsResult> SendAsync(SmsMessage message)
+    /// <summary>
+    /// Sends the specified SMS message by using the configured Twilio account.
+    /// </summary>
+    /// <param name="message">The SMS message to send.</param>
+    /// <param name="cancellationToken">The cancellation token.</param>
+    /// <returns>A <see cref="Result"/> describing whether Twilio accepted the SMS message.</returns>
+    public async Task<Result> SendAsync(SmsMessage message, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(message);
 
@@ -77,28 +84,28 @@ public class TwilioSmsProvider : ISmsProvider
             };
 
             var client = GetHttpClient(settings);
-            var response = await client.PostAsync($"{settings.AccountSID}/Messages.json", new FormUrlEncodedContent(data));
+            var response = await client.PostAsync($"{settings.AccountSID}/Messages.json", new FormUrlEncodedContent(data), cancellationToken);
 
             if (response.IsSuccessStatusCode)
             {
-                var result = await response.Content.ReadFromJsonAsync<TwilioMessageResponse>(_jsonSerializerOptions);
+                var result = await response.Content.ReadFromJsonAsync<TwilioMessageResponse>(_jsonSerializerOptions, cancellationToken);
 
                 if (string.Equals(result.Status, "sent", StringComparison.OrdinalIgnoreCase) ||
                     string.Equals(result.Status, "queued", StringComparison.OrdinalIgnoreCase))
                 {
-                    return SmsResult.Success;
+                    return Result.Success();
                 }
 
                 _logger.LogError("Twilio service was unable to send SMS messages. Error, code: {ErrorCode}, message: {ErrorMessage}", result.ErrorCode, result.ErrorMessage);
             }
 
-            return SmsResult.Failed(S["The SMS message has not been sent."]);
+            return Result.Failed(S["The SMS message has not been sent."]);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Twilio service was unable to send SMS messages.");
 
-            return SmsResult.Failed(S["The SMS message has not been sent. Error: {0}", ex.Message]);
+            return Result.Failed(S["The SMS message has not been sent. Error: {0}", ex.Message]);
         }
     }
 

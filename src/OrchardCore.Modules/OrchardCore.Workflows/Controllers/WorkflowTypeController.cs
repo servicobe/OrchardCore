@@ -1,5 +1,6 @@
 using System.Globalization;
 using System.IO.Compression;
+using System.Net.Mime;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using Dapper;
@@ -179,7 +180,7 @@ public sealed class WorkflowTypeController : Controller
             return Forbid();
         }
 
-        if (itemIds?.Count() > 0)
+        if (itemIds?.Any() == true)
         {
             var checkedEntries = await _session.Query<WorkflowType, WorkflowTypeIndex>()
                 .Where(x => x.DocumentId.IsIn(itemIds)).ListAsync();
@@ -191,6 +192,8 @@ public sealed class WorkflowTypeController : Controller
                     return await ExportWorkflows(itemIds.ToArray());
 
                 case WorkflowTypeBulkAction.Delete:
+                    var deletedWorkflowTypeNames = new List<string>();
+
                     foreach (var entry in checkedEntries)
                     {
                         var workflowType = await _workflowTypeStore.GetAsync(entry.Id);
@@ -198,9 +201,15 @@ public sealed class WorkflowTypeController : Controller
                         if (workflowType != null)
                         {
                             await _workflowTypeStore.DeleteAsync(workflowType);
-                            await _notifier.SuccessAsync(H["Workflow {0} has been deleted.", workflowType.Name]);
+                            deletedWorkflowTypeNames.Add(workflowType.Name);
                         }
                     }
+
+                    if (deletedWorkflowTypeNames.Count > 0)
+                    {
+                        await _notifier.SuccessAsync(H.Plural(deletedWorkflowTypeNames.Count, "The workflow \"{1}\" has been deleted.", "The following workflows have been deleted: {1}.", string.Join(", ", deletedWorkflowTypeNames)));
+                    }
+
                     break;
 
                 default:
@@ -579,7 +588,7 @@ public sealed class WorkflowTypeController : Controller
             ? workflowTypes.FirstOrDefault().Name
             : S["Workflow Types"];
 
-        return new PhysicalFileResult(archiveFileName, "application/zip")
+        return new PhysicalFileResult(archiveFileName, MediaTypeNames.Application.Zip)
         {
             FileDownloadName = packageName + ".zip",
         };

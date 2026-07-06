@@ -1,3 +1,4 @@
+using System.Net.Mime;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.DependencyInjection;
@@ -33,6 +34,7 @@ public sealed class Startup : StartupBase
     {
         services.AddNavigationProvider<AdminMenu>();
         services.AddPermissionProvider<Permissions>();
+        services.AddScoped<TenantDatabasePatternResolver>();
         services.AddScoped<ITenantValidator, TenantValidator>();
         services.AddShapeTableProvider<TenantShapeTableProvider>();
         services.AddSetup();
@@ -50,7 +52,7 @@ public sealed class FileProviderStartup : StartupBase
     private const string AssetsPath = "wwwroot";
 
     // Run after other middlewares.
-    public override int Order => 10;
+    public override int Order => OrchardCoreConstants.ConfigureOrder.FileProvider;
 
     public override void ConfigureServices(IServiceCollection services)
     {
@@ -81,7 +83,7 @@ public sealed class FileProviderStartup : StartupBase
         app.UseStaticFiles(new StaticFileOptions
         {
             FileProvider = tenantFileProvider,
-            DefaultContentType = "application/octet-stream",
+            DefaultContentType = MediaTypeNames.Application.Octet,
             ServeUnknownFileTypes = true,
 
             // Cache the tenant static files for 30 days.
