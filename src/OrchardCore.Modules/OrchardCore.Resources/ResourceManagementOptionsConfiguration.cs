@@ -32,7 +32,7 @@ public sealed class ResourceManagementOptionsConfiguration
         _pathBase = httpContextAccessor.HttpContext.Request.PathBase;
     }
 
-    private ResourceManifest BuildManifest()
+    private static ResourceManifest BuildManifest()
     {
         var manifest = new ResourceManifest();
 
@@ -462,19 +462,20 @@ public sealed class ResourceManagementOptionsConfiguration
 
         manifest
             .DefineStyle("bootstrap-select")
+            .SetDependencies("bootstrap")
             .SetUrl(
                 "~/OrchardCore.Resources/Vendor/CrestApps/bootstrap-select/bootstrap-select.min.css",
                 "~/OrchardCore.Resources/Vendor/CrestApps/bootstrap-select/bootstrap-select.css"
             )
             .SetCdn(
-                "https://cdn.jsdelivr.net/npm/@crestapps/bootstrap-select@1.2.0/dist/css/bootstrap-select.min.css",
-                "https://cdn.jsdelivr.net/npm/@crestapps/bootstrap-select@1.2.0/dist/css/bootstrap-select.css"
+                "https://cdn.jsdelivr.net/npm/@crestapps/bootstrap-select@1.2.6/dist/css/bootstrap-select.min.css",
+                "https://cdn.jsdelivr.net/npm/@crestapps/bootstrap-select@1.2.6/dist/css/bootstrap-select.css"
             )
             .SetCdnIntegrity(
-                "sha384-7yj05Iamc4rfesLo160W11ywhuIME+BcB43waDx0Y1rI1LEyCK368ml0MI9Lwzr7",
-                "sha384-jN5x01dkUiVJwxGy3x+e/53AB0jN9D9bBomsrbCJehtMMCIK5vOzd7aTNXV3/bze"
+                "sha384-6LsIeuccw37t/G+JYmUJCqtoGEuvsa1bnGWX/VG/hvzhtqqOHBl8KYD1ZOVnpuBL",
+                "sha384-qnwvlWZ3n+kXXdnt7N/G13DZvEYRsyOeYKaRIH4Nb1Y2GPPQ2PUQW4DEsSt1vswx"
             )
-            .SetVersion("1.2.1");
+            .SetVersion("1.2.6");
 
         manifest
             .DefineScript("bootstrap-select")
@@ -484,14 +485,14 @@ public sealed class ResourceManagementOptionsConfiguration
                 "~/OrchardCore.Resources/Vendor/CrestApps/bootstrap-select/bootstrap-select.js"
             )
             .SetCdn(
-                "https://cdn.jsdelivr.net/npm/@crestapps/bootstrap-select@1.2.1/dist/js/bootstrap-select.min.js",
-                "https://cdn.jsdelivr.net/npm/@crestapps/bootstrap-select@1.2.1/dist/js/bootstrap-select.js"
+                "https://cdn.jsdelivr.net/npm/@crestapps/bootstrap-select@1.2.6/dist/js/bootstrap-select.min.js",
+                "https://cdn.jsdelivr.net/npm/@crestapps/bootstrap-select@1.2.6/dist/js/bootstrap-select.js"
             )
             .SetCdnIntegrity(
-                "sha384-R7aQ+h/YwfYWxwVbXnRupt5dDCEB+GFE5kGRXdMRqqTb8a44gKz4FhiTVCIl1utj",
-                "sha384-OoRqHGsY2f8cxSKpRli5U/ioHYo5CO4Nqz9+jMhs/Ah3slKOn36MzgaO3Dixk2D0"
+                "sha384-8gpw3BTbrKXox8xuy0UgEdkqodMPV6T6ioWoKy22GLG0G6Vl4o/w3hnGmfgJsDAa",
+                "sha384-0Uj49Z/VAMAiWVEeyuN0z3zFOhagfh2Bl5Ho/f90Q74WtNxR93jRGvOLalVWtxYt"
             )
-            .SetVersion("1.2.1");
+            .SetVersion("1.2.6");
 
         manifest
             .DefineStyle("nouislider")
@@ -511,7 +512,6 @@ public sealed class ResourceManagementOptionsConfiguration
 
         manifest
             .DefineScript("nouislider")
-            .SetDependencies("jQuery")
             .SetUrl(
                 "~/OrchardCore.Resources/Scripts/nouislider/nouislider.min.js",
                 "~/OrchardCore.Resources/Scripts/nouislider/nouislider.js"
@@ -668,7 +668,7 @@ public sealed class ResourceManagementOptionsConfiguration
 
         manifest
             .DefineScript("codemirror-addon-hint-sql-hint")
-            .SetDependencies("codemirror-addon-hint-show-hint")
+            .SetDependencies("codemirror-mode-sql", "codemirror-addon-hint-show-hint")
             .SetUrl(
                 "~/OrchardCore.Resources/Scripts/codemirror/addon/hint/sql-hint.min.js",
                 "~/OrchardCore.Resources/Scripts/codemirror/addon/hint/sql-hint.js"
@@ -717,6 +717,7 @@ public sealed class ResourceManagementOptionsConfiguration
 
         manifest
             .DefineScript("codemirror-addon-selection-active-line")
+            .SetDependencies("codemirror")
             .SetUrl(
                 "~/OrchardCore.Resources/Scripts/codemirror/addon/selection/active-line.min.js",
                 "~/OrchardCore.Resources/Scripts/codemirror/addon/selection/active-line.js"
@@ -778,6 +779,7 @@ public sealed class ResourceManagementOptionsConfiguration
 
         manifest
             .DefineScript("codemirror-mode-sql")
+            .SetDependencies("codemirror", "codemirror-mode-javascript")
             .SetUrl(
                 "~/OrchardCore.Resources/Scripts/codemirror/mode/sql/sql.min.js",
                 "~/OrchardCore.Resources/Scripts/codemirror/mode/sql/sql.js"
@@ -971,14 +973,14 @@ public sealed class ResourceManagementOptionsConfiguration
                 "~/OrchardCore.Resources/Vendor/fontawesome-free/css/all.css"
             )
             .SetCdn(
-                "https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@7.3.0/css/all.min.css",
-                "https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@7.3.0/css/all.css"
+                "https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@7.3.1/css/all.min.css",
+                "https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@7.3.1/css/all.css"
             )
             .SetCdnIntegrity(
-                "sha384-sTlsophtwz/I4myskS3OIJf5VvEojkXKZyBTWZm0YD/K1pN7C5wpBPLyrsbr1SU2",
-                "sha384-HmQbeouty+ghT7BWGQoLvgj8OgGl43MTr+/aWUIlULAJ0zaDx55CL1edxh8yvedQ"
+                "sha384-qrALq7+6jBOZIQsNnT6xGkMDru64qD6uTlDra39xrt2SoXl4pO3FX6Roz/RpR/BS",
+                "sha384-7WvIYI4vLdL28Kb0e0uLmaY+AFg62zUFE8P4OgFsKy0m93wWgDxFmdtVTkKNTJi8"
             )
-            .SetVersion("7.3.0");
+            .SetVersion("7.3.1");
 
         manifest
             .DefineScript("font-awesome")
@@ -987,14 +989,14 @@ public sealed class ResourceManagementOptionsConfiguration
                 "~/OrchardCore.Resources/Vendor/fontawesome-free/js/all.js"
             )
             .SetCdn(
-                "https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@7.3.0/js/all.min.js",
-                "https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@7.3.0/js/all.js"
+                "https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@7.3.1/js/all.min.js",
+                "https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@7.3.1/js/all.js"
             )
             .SetCdnIntegrity(
-                "sha384-CmRILoZH2KuzLzypVffxlQJ4qc6TNus1xpqA3ZDM10f3AsuTfJEJ1u+YivWs8GRh",
-                "sha384-nA02ETYhc//66jiS05C9eSDq+XjPMoqAoZAlSJI/8ovIGMqkJfvz8oE/VYvW+Js9"
+                "sha384-nUoGK97t7uWSCbMZY3w/oH8v2WJFAsPdz0qtcXgHwyCeTlyvTClTftOOsjZHfdhj",
+                "sha384-4+SVXdlnJDmvfRRvTEFA9eVgupOcAG0poSILAKGGF1p152/j12vspPqfsdkYvNaY"
             )
-            .SetVersion("7.3.0");
+            .SetVersion("7.3.1");
 
         manifest
             .DefineScript("font-awesome-v4-shims")
@@ -1003,14 +1005,14 @@ public sealed class ResourceManagementOptionsConfiguration
                 "~/OrchardCore.Resources/Vendor/fontawesome-free/js/v4-shims.js"
             )
             .SetCdn(
-                "https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@7.3.0/js/v4-shims.min.js",
-                "https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@7.3.0/js/v4-shims.js"
+                "https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@7.3.1/js/v4-shims.min.js",
+                "https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@7.3.1/js/v4-shims.js"
             )
             .SetCdnIntegrity(
-                "sha384-sNjePaEENhXa8DLVEeW8n2ZIuBfs/k0eGOKh0Vz/m3Ug2sVv7u4xj9wrLVv6+fNx",
-                "sha384-4BX5DqHGTub3ktdLwoJZY278Y+WcfPQj2l3/CbcZuMnZ6U8W3YH5spdNsU15rC84"
+                "sha384-1oLhR9aGDanSh3MjG+86RDzJFtyR6UWbUWrT9OYMaLkHqR7key1SQbzM6KD+L7ax",
+                "sha384-XskgpoBtmWfQht2OsayyakdecpD0uLTDP1b3gEEgqmvNQvb/f22g/EizjK6i5gz5"
             )
-            .SetVersion("7.3.0");
+            .SetVersion("7.3.1");
 
         manifest
             .DefineScript("fontawesome-iconpicker")
@@ -1110,23 +1112,17 @@ public sealed class ResourceManagementOptionsConfiguration
             )
             .SetVersion("1.0.0");
 
-        // Vue.js 
+        // List Management
 
         manifest
-            .DefineScript("vuejs")
+            .DefineScript("list-management")
             .SetUrl(
-                "~/OrchardCore.Resources/Vendor/vue-2.7.16/vue.min.js",
-                "~/OrchardCore.Resources/Vendor/vue-2.7.16/vue.js"
+                "~/OrchardCore.Resources/Scripts/list-management.min.js",
+                "~/OrchardCore.Resources/Scripts/list-management.js"
             )
-            .SetCdn(
-                "https://cdn.jsdelivr.net/npm/vue@2.7.16/dist/vue.min.js",
-                "https://cdn.jsdelivr.net/npm/vue@2.7.16/dist/vue.js"
-            )
-            .SetCdnIntegrity(
-                "sha384-YVYXhPGIH/Gmcr0W5Rin4PcpcsG1a4pcdUUod1CnbDEJut7XiUaJtSlNKeRLJBPk",
-                "sha384-smVS78N63G0uFpVH9bKdb+2YIW7Q9eFrle79imo+AWW6YLluQxAEK7kxLOt1bNex"
-            )
-            .SetVersion("2.7.16");
+            .SetVersion("1.0.0");
+
+        // Vue.js 
 
         manifest
             .DefineScript("vuejs")
@@ -1146,25 +1142,7 @@ public sealed class ResourceManagementOptionsConfiguration
 
         manifest
             .DefineScript("vue-multiselect")
-            .SetDependencies("vuejs:2")
-            .SetUrl("~/OrchardCore.Resources/Vendor/vue-multiselect-2.1.6/vue-multiselect.min.js")
-            .SetCdn(
-                "https://cdn.jsdelivr.net/npm/vue-multiselect@2.1.6/dist/vue-multiselect.min.js"
-            )
-            .SetCdnIntegrity(
-                "sha384-a4eXewRTYCwYdFtSnMCZTNtiXrfdul6aQdueRgHPAx2y1Ldp0QaFdCTpOx0ycsXU"
-            )
-            .SetVersion("2.1.6");
-
-        manifest
-            .DefineScript("vue-multiselect-wrapper")
-            .SetUrl("~/OrchardCore.Resources/Scripts/vue-multiselect-wrapper.min.js", "~/OrchardCore.Resources/Scripts/vue-multiselect-wrapper.js")
-            .SetDependencies("vuejs:2", "vue-multiselect:2", "vue-draggable:2")
-            .SetVersion("1.0.0");
-
-        manifest
-            .DefineScript("vue-multiselect")
-            .SetDependencies("vuejs:3")
+            .SetDependencies("vuejs")
             .SetUrl(
                 "~/OrchardCore.Resources/Scripts/vue-multiselect.umd.min.js",
                 "~/OrchardCore.Resources/Scripts/vue-multiselect.umd.js"
@@ -1178,17 +1156,6 @@ public sealed class ResourceManagementOptionsConfiguration
                 "sha384-7EnWodE8EplOPsNbw/n7oUIXVb0xsbUhgfxnzJc+MGgbzzLpJwlA0OccVdY0EU/w"
             )
             .SetVersion("3.2.0");
-
-        manifest
-            .DefineStyle("vue-multiselect")
-            .SetUrl("~/OrchardCore.Resources/Vendor/vue-multiselect-2.1.6/vue-multiselect.min.css")
-            .SetCdn(
-                "https://cdn.jsdelivr.net/npm/vue-multiselect@2.1.6/dist/vue-multiselect.min.css"
-            )
-            .SetCdnIntegrity(
-                "sha384-PPH/T7V86Z1+B4eMPef4FJXLD5fsTpObWoCoK3CiNtSX7aji+5qxpOCn1f2TDYAM"
-            )
-            .SetVersion("2.1.6");
 
         manifest
             .DefineStyle("vue-multiselect")
@@ -1224,24 +1191,7 @@ public sealed class ResourceManagementOptionsConfiguration
 
         manifest
             .DefineScript("vue-draggable")
-            .SetDependencies("vuejs:2", "Sortable")
-            .SetUrl(
-                "~/OrchardCore.Resources/Vendor/vue-draggable-2.24.3/vuedraggable.umd.min.js",
-                "~/OrchardCore.Resources/Vendor/vue-draggable-2.24.3/vuedraggable.umd.js"
-            )
-            .SetCdn(
-                "https://cdn.jsdelivr.net/npm/vuedraggable@2.24.3/dist/vuedraggable.umd.min.js",
-                "https://cdn.jsdelivr.net/npm/vuedraggable@2.24.3/dist/vuedraggable.umd.js"
-            )
-            .SetCdnIntegrity(
-                "sha384-qUA1xXJiX23E4GOeW/XHtsBkV9MUcHLSjhi3FzO08mv8+W8bv5AQ1cwqLskycOTs",
-                "sha384-+jB9vXc/EaIJTlNiZG2tv+TUpKm6GR9HCRZb3VkI3lscZWqrCYDbX2ZXffNJldL9"
-            )
-            .SetVersion("2.24.3");
-
-        manifest
-            .DefineScript("vue-draggable")
-            .SetDependencies("vuejs:3", "Sortable")
+            .SetDependencies("vuejs", "Sortable")
             .SetUrl(
                 "~/OrchardCore.Resources/Scripts/vuedraggable.umd.min.js",
                 "~/OrchardCore.Resources/Scripts/vuedraggable.umd.js"
@@ -1274,19 +1224,23 @@ public sealed class ResourceManagementOptionsConfiguration
             )
             .SetVersion("3.0.5");
 
-        // Monaco Editor
-
-        manifest
-            .DefineScript("monaco-loader")
-            .SetUrl("~/OrchardCore.Resources/Scripts/monaco/vs/loader.js")
-            .SetPosition(ResourcePosition.Last)
-            .SetVersion(MonacoEditorVersion);
+        // Monaco Editor: loaded as a real `import * as monaco from "monaco-editor"` (see
+        // Assets/monaco/monaco-loader.ts), not the classic AMD/RequireJS loader this used to be.
 
         manifest
             .DefineScript("monaco")
-            .SetAttribute("data-tenant-prefix", _pathBase)
-            .SetUrl("~/OrchardCore.Resources/Scripts/monaco/ocmonaco.js")
-            .SetDependencies("monaco-loader")
+            .SetUrl(
+                "~/OrchardCore.Resources/Scripts/monaco-esm/monaco-loader.min.js",
+                "~/OrchardCore.Resources/Scripts/monaco-esm/monaco-loader.js"
+            )
+            .SetVersion(MonacoEditorVersion);
+
+        // The AMD build's CSS was loaded internally by its own loader; the ESM build's CSS is a
+        // plain `import "*.css"` inside monaco-editor's own modules, which Parcel extracts to a
+        // standalone file that has to be linked explicitly like any other stylesheet.
+        manifest
+            .DefineStyle("monaco")
+            .SetUrl("~/OrchardCore.Resources/Scripts/monaco-esm/monaco-loader.css")
             .SetVersion(MonacoEditorVersion);
 
         return manifest;
